@@ -1,1 +1,195 @@
-{% extends 'base.html' %}{% block title %}Attendance{% endblock %}{% block content %}<section><div class="page-head"><div><h1>Attendance</h1><p class="subtitle">Mark and manage attendance.</p></div></div><div class="form-card"><form method="post" class="form-grid"><div><label>Student</label><select name="student_id" required><option value="">Select student</option>{% for s in students %}<option value="{{ s.id }}">{{ s.name }} - {{ s.roll_no }}</option>{% endfor %}</select></div><div><label>Date</label><input type="date" name="date" required></div><div><label>Subject</label><input name="subject" required></div><div><label>Status</label><select name="status"><option>Present</option><option>Absent</option></select></div><div class="full"><button class="btn">Save Attendance</button></div></form></div><div class="table-wrap section"><h2>Attendance Records</h2><p>Toggle status or delete a record.</p><div class="table-scroll" style="margin-top:14px"><table><thead><tr><th>Date</th><th>Student</th><th>Roll Number</th><th>Subject</th><th>Status</th><th>Actions</th></tr></thead><tbody>{% for r in records %}<tr><td>{{ r.date }}</td><td>{{ r.name }}</td><td>{{ r.roll_no }}</td><td>{{ r.subject }}</td><td><span class="badge {{ 'present' if r.status=='Present' else 'absent' }}">{{ r.status }}</span></td><td><div class="actions"><form method="post" action="{{ url_for('toggle',i=r.id) }}"><button class="btn ghost">Toggle</button></form><form method="post" action="{{ url_for('delete_attendance',i=r.id) }}" onsubmit="return confirm('Delete this attendance record?')"><button class="btn red-btn">Delete</button></form></div></td></tr>{% else %}<tr><td colspan="6" class="empty">No attendance records yet.</td></tr>{% endfor %}</tbody></table></div></div></section>{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Attendance{% endblock %}
+
+{% block content %}
+<section>
+  <div class="page-head">
+    <div>
+      <h1>Attendance</h1>
+      <p class="subtitle">Mark and manage attendance.</p>
+    </div>
+  </div>
+
+  <div class="form-card">
+    <form method="post" class="form-grid" id="attendanceForm">
+
+      <div>
+        <label>Student</label>
+        <select name="student_id" id="studentSelect" required>
+          <option value="">Select student</option>
+          {% for s in students %}
+          <option value="{{ s.id }}">{{ s.name }} - {{ s.roll_no }}</option>
+          {% endfor %}
+        </select>
+        <small id="studentHint" style="display:block;margin-top:7px;opacity:.7;">
+          Students already marked for the selected date and subject will be disabled.
+        </small>
+      </div>
+
+      <div>
+        <label>Date</label>
+        <input type="date" name="date" id="attendanceDate" required>
+      </div>
+
+      <div>
+        <label>Subject</label>
+        <select name="subject" id="subjectSelect" required>
+          <option value="">Select subject</option>
+          <option value="English">English</option>
+          <option value="Punjabi">Punjabi</option>
+          <option value="Hindi">Hindi</option>
+          <option value="Mathematics">Mathematics</option>
+          <option value="Physics">Physics</option>
+          <option value="Chemistry">Chemistry</option>
+          <option value="Computer Science">Computer Science</option>
+          <option value="Python">Python</option>
+          <option value="C Programming">C Programming</option>
+          <option value="C++">C++</option>
+          <option value="Java">Java</option>
+          <option value="Web Development">Web Development</option>
+          <option value="Database Management System">Database Management System</option>
+          <option value="Operating System">Operating System</option>
+          <option value="Computer Networks">Computer Networks</option>
+          <option value="Data Structures">Data Structures</option>
+          <option value="Software Engineering">Software Engineering</option>
+          <option value="Practical">Practical</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Status</label>
+        <select name="status">
+          <option>Present</option>
+          <option>Absent</option>
+        </select>
+      </div>
+
+      <div class="full">
+        <button class="btn" id="saveAttendanceBtn">Save Attendance</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="table-wrap section">
+    <h2>Attendance Records</h2>
+    <p>Toggle status or delete a record.</p>
+
+    <div class="table-scroll" style="margin-top:14px">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Student</th>
+            <th>Roll Number</th>
+            <th>Subject</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for r in records %}
+          <tr>
+            <td>{{ r.date }}</td>
+            <td>{{ r.name }}</td>
+            <td>{{ r.roll_no }}</td>
+            <td>{{ r.subject }}</td>
+            <td>
+              <span class="badge {{ 'present' if r.status=='Present' else 'absent' }}">
+                {{ r.status }}
+              </span>
+            </td>
+            <td>
+              <div class="actions">
+                <form method="post" action="{{ url_for('toggle',i=r.id) }}">
+                  <button class="btn ghost">Toggle</button>
+                </form>
+
+                <form method="post"
+                      action="{{ url_for('delete_attendance',i=r.id) }}"
+                      onsubmit="return confirm('Delete this attendance record?')">
+                  <button class="btn red-btn">Delete</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="6" class="empty">No attendance records yet.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<script>
+(function () {
+  const dateInput = document.getElementById("attendanceDate");
+  const subjectSelect = document.getElementById("subjectSelect");
+  const studentSelect = document.getElementById("studentSelect");
+  const saveBtn = document.getElementById("saveAttendanceBtn");
+
+  // Automatically set today's date.
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, "0");
+  const dd = String(today.getDate()).padStart(2, "0");
+  const todayValue = `${yyyy}-${mm}-${dd}`;
+
+  if (!dateInput.value) {
+    dateInput.value = todayValue;
+  }
+
+  // Existing attendance records from the current page.
+  const existing = [
+    {% for r in records %}
+    {
+      student_id: "{{ r.student_id }}",
+      date: "{{ r.date }}",
+      subject: {{ r.subject|tojson }}
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ];
+
+  function updateStudents() {
+    const selectedDate = dateInput.value;
+    const selectedSubject = subjectSelect.value;
+
+    [...studentSelect.options].forEach(option => {
+      if (!option.value) return;
+
+      const alreadyMarked = existing.some(record =>
+        String(record.student_id) === String(option.value) &&
+        record.date === selectedDate &&
+        record.subject.toLowerCase() === selectedSubject.toLowerCase()
+      );
+
+      option.disabled = alreadyMarked;
+
+      if (alreadyMarked && option.selected) {
+        studentSelect.value = "";
+      }
+    });
+
+    const selectedStudent = studentSelect.value;
+    const duplicate = selectedStudent && existing.some(record =>
+      String(record.student_id) === String(selectedStudent) &&
+      record.date === selectedDate &&
+      record.subject.toLowerCase() === selectedSubject.toLowerCase()
+    );
+
+    saveBtn.disabled = !!duplicate;
+  }
+
+  dateInput.addEventListener("change", updateStudents);
+  subjectSelect.addEventListener("change", updateStudents);
+  studentSelect.addEventListener("change", updateStudents);
+
+  updateStudents();
+})();
+</script>
+
+{% endblock %}
