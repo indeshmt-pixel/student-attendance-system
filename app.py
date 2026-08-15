@@ -39,7 +39,7 @@ def students():
  if request.method=='POST':
   try:
    name=request.form.get('name','').strip(); roll_no=request.form.get('roll_no','').strip(); course=request.form.get('course','').strip(); semester=request.form.get('semester','').strip(); email=request.form.get('email','').strip().lower()
-   if email and not re.fullmatch(r'[^@\\s]+@[^@\\s]+\\.[^@\\s]+',email): flash('Please enter a valid Gmail/email address.','error')
+   if email and not re.fullmatch(r'[^@\s]+@[^@\s]+\.[^@\s]+',email): flash('Please enter a valid Gmail/email address.','error')
    else:
     c.execute('INSERT INTO students(name,roll_no,course,semester,email) VALUES(?,?,?,?,?)',(name,roll_no,course,semester,email)); c.commit(); flash('Student added successfully.','success')
   except sqlite3.IntegrityError: flash('This roll number already exists.','error')
