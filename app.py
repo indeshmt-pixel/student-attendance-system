@@ -1,4 +1,4 @@
-import os, sqlite3
+import os, sqlite3, re
 from functools import wraps
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -7,7 +7,10 @@ app=Flask(__name__); app.secret_key=os.environ.get('SECRET_KEY','change-this-sec
 def db():
  c=sqlite3.connect(DB_PATH); c.row_factory=sqlite3.Row; c.execute('PRAGMA foreign_keys=ON'); return c
 def init_db():
- c=db(); c.executescript('''CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY AUTOINCREMENT,username TEXT UNIQUE NOT NULL,password_hash TEXT NOT NULL);CREATE TABLE IF NOT EXISTS students(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,roll_no TEXT UNIQUE NOT NULL,course TEXT DEFAULT '',semester TEXT DEFAULT '',created_at TEXT DEFAULT CURRENT_TIMESTAMP);CREATE TABLE IF NOT EXISTS attendance(id INTEGER PRIMARY KEY AUTOINCREMENT,student_id INTEGER NOT NULL,date TEXT NOT NULL,subject TEXT NOT NULL,status TEXT NOT NULL CHECK(status IN ('Present','Absent')),created_at TEXT DEFAULT CURRENT_TIMESTAMP,FOREIGN KEY(student_id) REFERENCES students(id) ON DELETE CASCADE,UNIQUE(student_id,date,subject));''')
+ c=db(); c.executescript('''CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY AUTOINCREMENT,username TEXT UNIQUE NOT NULL,password_hash TEXT NOT NULL);CREATE TABLE IF NOT EXISTS students(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,roll_no TEXT UNIQUE NOT NULL,course TEXT DEFAULT '',semester TEXT DEFAULT '',email TEXT DEFAULT '',created_at TEXT DEFAULT CURRENT_TIMESTAMP);CREATE TABLE IF NOT EXISTS attendance(id INTEGER PRIMARY KEY AUTOINCREMENT,student_id INTEGER NOT NULL,date TEXT NOT NULL,subject TEXT NOT NULL,status TEXT NOT NULL CHECK(status IN ('Present','Absent')),created_at TEXT DEFAULT CURRENT_TIMESTAMP,FOREIGN KEY(student_id) REFERENCES students(id) ON DELETE CASCADE,UNIQUE(student_id,date,subject));''')
+ # Add email to an existing students table without deleting existing data.
+ columns=[r['name'] for r in c.execute("PRAGMA table_info(students)").fetchall()]
+ if 'email' not in columns: c.execute("ALTER TABLE students ADD COLUMN email TEXT DEFAULT ''")
  if not c.execute("SELECT id FROM users WHERE username='admin'").fetchone(): c.execute("INSERT INTO users(username,password_hash) VALUES(?,?)",('admin',generate_password_hash('admin123')))
  c.commit(); c.close()
 def login_required(f):
@@ -35,9 +38,12 @@ def students():
  c=db()
  if request.method=='POST':
   try:
-   c.execute('INSERT INTO students(name,roll_no,course,semester) VALUES(?,?,?,?)',(request.form.get('name','').strip(),request.form.get('roll_no','').strip(),request.form.get('course','').strip(),request.form.get('semester','').strip())); c.commit(); flash('Student added successfully.','success')
+   name=request.form.get('name','').strip(); roll_no=request.form.get('roll_no','').strip(); course=request.form.get('course','').strip(); semester=request.form.get('semester','').strip(); email=request.form.get('email','').strip().lower()
+   if email and not re.fullmatch(r'[^@\\s]+@[^@\\s]+\\.[^@\\s]+',email): flash('Please enter a valid Gmail/email address.','error')
+   else:
+    c.execute('INSERT INTO students(name,roll_no,course,semester,email) VALUES(?,?,?,?,?)',(name,roll_no,course,semester,email)); c.commit(); flash('Student added successfully.','success')
   except sqlite3.IntegrityError: flash('This roll number already exists.','error')
- q=request.args.get('q','').strip(); rows=c.execute('SELECT * FROM students WHERE name LIKE ? OR roll_no LIKE ? OR course LIKE ? ORDER BY id DESC',(f'%{q}%',f'%{q}%',f'%{q}%')).fetchall() if q else c.execute('SELECT * FROM students ORDER BY id DESC').fetchall(); c.close(); return render_template('students.html',students=rows,q=q)
+ q=request.args.get('q','').strip(); rows=c.execute('SELECT * FROM students WHERE name LIKE ? OR roll_no LIKE ? OR course LIKE ? OR semester LIKE ? OR email LIKE ? ORDER BY id DESC',(f'%{q}%',f'%{q}%',f'%{q}%',f'%{q}%',f'%{q}%')).fetchall() if q else c.execute('SELECT * FROM students ORDER BY id DESC').fetchall(); c.close(); return render_template('students.html',students=rows,q=q)
 @app.post('/students/<int:i>/delete')
 @login_required
 def delete_student(i): c=db(); c.execute('DELETE FROM students WHERE id=?',(i,)); c.commit(); c.close(); flash('Student deleted.','success'); return redirect(url_for('students'))

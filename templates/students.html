@@ -1,1 +1,112 @@
-{% extends 'base.html' %}{% block title %}Students{% endblock %}{% block content %}<section><div class="page-head"><div><h1>Students</h1><p class="subtitle">Add, search and manage students.</p></div></div><div class="form-card"><form method="post" class="form-grid"><div><label>Student Name</label><input name="name" required></div><div><label>Roll Number</label><input name="roll_no" required></div><div><label>Course</label><input name="course" placeholder="Optional"></div><div><label>Semester</label><input name="semester" placeholder="Optional"></div><div class="full"><button class="btn">Add Student</button></div></form></div><div class="table-wrap section"><div class="toolbar"><form style="display:flex;gap:8px;flex:1"><input name="q" value="{{ q }}" placeholder="Search by name, roll number or course"><button class="btn ghost">Search</button></form></div><div class="table-scroll"><table><thead><tr><th>Name</th><th>Roll Number</th><th>Course</th><th>Semester</th><th>Action</th></tr></thead><tbody>{% for s in students %}<tr><td>{{ s.name }}</td><td>{{ s.roll_no }}</td><td>{{ s.course or '-' }}</td><td>{{ s.semester or '-' }}</td><td><form method="post" action="{{ url_for('delete_student',i=s.id) }}" onsubmit="return confirm('Delete this student and related attendance?')"><button class="btn red-btn">Delete</button></form></td></tr>{% else %}<tr><td colspan="5" class="empty">No students found.</td></tr>{% endfor %}</tbody></table></div></div></section>{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Students{% endblock %}
+{% block content %}
+<section>
+  <div class="page-head">
+    <div>
+      <h1>Students</h1>
+      <p class="subtitle">Add, search and manage students.</p>
+    </div>
+  </div>
+
+  <div class="form-card">
+    <form method="post" class="form-grid">
+      <div>
+        <label>Student Name</label>
+        <input name="name" placeholder="Enter student name" required>
+      </div>
+
+      <div>
+        <label>Roll Number</label>
+        <input name="roll_no" placeholder="Enter roll number" required>
+      </div>
+
+      <div>
+        <label>Course</label>
+        <select name="course" required>
+          <option value="" selected disabled>Select course</option>
+          <option>BCA</option>
+          <option>BBA</option>
+          <option>B.Com</option>
+          <option>BA</option>
+          <option>B.Sc</option>
+          <option>B.Tech</option>
+          <option>MCA</option>
+          <option>MBA</option>
+          <option>M.Com</option>
+          <option>M.Tech</option>
+          <option>Other</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Semester</label>
+        <select name="semester" required>
+          <option value="" selected disabled>Select semester</option>
+          <option>1st Semester</option>
+          <option>2nd Semester</option>
+          <option>3rd Semester</option>
+          <option>4th Semester</option>
+          <option>5th Semester</option>
+          <option>6th Semester</option>
+          <option>7th Semester</option>
+          <option>8th Semester</option>
+        </select>
+      </div>
+
+      <div class="full">
+        <label>Gmail / Email</label>
+        <input type="email" name="email" placeholder="student@gmail.com">
+      </div>
+
+      <div class="full">
+        <button class="btn" type="submit">Add Student</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="table-wrap section">
+    <div class="toolbar">
+      <form style="display:flex;gap:8px;flex:1">
+        <input name="q" value="{{ q }}" placeholder="Search by name, roll number, course, semester or email">
+        <button class="btn ghost" type="submit">Search</button>
+      </form>
+    </div>
+
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Roll Number</th>
+            <th>Course</th>
+            <th>Semester</th>
+            <th>Email</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in students %}
+          <tr>
+            <td>{{ s.name }}</td>
+            <td>{{ s.roll_no }}</td>
+            <td>{{ s.course or '-' }}</td>
+            <td>{{ s.semester or '-' }}</td>
+            <td>{{ s.email or '-' }}</td>
+            <td>
+              <form method="post" action="{{ url_for('delete_student',i=s.id) }}" onsubmit="return confirm('Delete this student and related attendance?')">
+                <button class="btn red-btn" type="submit">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="6" class="empty">No students found.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endblock %}
