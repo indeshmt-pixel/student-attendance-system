@@ -51,9 +51,23 @@ def attendance():
  ss=c.execute('SELECT * FROM students ORDER BY name').fetchall(); rr=c.execute('SELECT a.*,s.name,s.roll_no FROM attendance a JOIN students s ON s.id=a.student_id ORDER BY a.date DESC,a.id DESC LIMIT 100').fetchall(); c.close(); return render_template('attendance.html',students=ss,records=rr)
 @app.post('/attendance/<int:i>/toggle')
 @login_required
-def toggle(i): c=db(); r=c.execute('SELECT status FROM attendance WHERE id=?',(i,)).fetchone();
- if r: c.execute('UPDATE attendance SET status=? WHERE id=?',('Absent' if r['status']=='Present' else 'Present',i)); c.commit()
- c.close(); return redirect(request.referrer or url_for('attendance'))
+def toggle(i):
+    c = db()
+    r = c.execute(
+        'SELECT status FROM attendance WHERE id=?',
+        (i,)
+    ).fetchone()
+
+    if r:
+        new_status = 'Absent' if r['status'] == 'Present' else 'Present'
+        c.execute(
+            'UPDATE attendance SET status=? WHERE id=?',
+            (new_status, i)
+        )
+        c.commit()
+
+    c.close()
+    return redirect(request.referrer or url_for('attendance'))
 @app.post('/attendance/<int:i>/delete')
 @login_required
 def delete_attendance(i): c=db(); c.execute('DELETE FROM attendance WHERE id=?',(i,)); c.commit(); c.close(); flash('Attendance deleted.','success'); return redirect(request.referrer or url_for('attendance'))
